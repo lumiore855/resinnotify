@@ -30,12 +30,16 @@ client.once(Events.ClientReady, (c) => {
 });
 
 async function callGAS(payload) {
+  console.log('sending payload:', payload);
   const res = await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  return res.json();
+  console.log('status:', res.status, res.headers.get('content-type'));
+  const text = await res.text();
+  console.log('response text:', text);
+  return JSON.parse(text);
 }
 
 client.on('interactionCreate', async (interaction) => {
@@ -48,13 +52,11 @@ client.on('interactionCreate', async (interaction) => {
   try {
     let data;
 
-    if (interaction.commandName === 'resin') {
+    if (interaction.commandName === 'webhook') {
       data = await callGAS({
-        type: 'saveResin',
+        type: 'saveWebhook',
         userId: interaction.user.id,
-        userName: interaction.user.username,
-        gameId: interaction.options.getString('game'),
-        resin: interaction.options.getInteger('value'),
+        webhookUrl: interaction.options.getString('url'),
       });
     }
 
@@ -67,11 +69,13 @@ client.on('interactionCreate', async (interaction) => {
       });
     }
 
-    if (interaction.commandName === 'webhook') {
+    if (interaction.commandName === 'resin') {
       data = await callGAS({
-        type: 'saveWebhook',
+        type: 'saveResin',
         userId: interaction.user.id,
-        webhookUrl: interaction.options.getString('url'),
+        userName: interaction.user.username,
+        gameId: interaction.options.getString('game'),
+        resin: interaction.options.getInteger('value'),
       });
     }
 
@@ -82,4 +86,16 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.login(DISCORD_TOKEN);
+console.log("TOKEN exists:", !!DISCORD_TOKEN);
+
+client.login(DISCORD_TOKEN)
+  .then(() => {
+    console.log("login() resolved");
+  })
+  .catch((err) => {
+    console.error("login() failed:", err);
+  });
+
+client.on("error", console.error);
+client.on("shardError", console.error);
+process.on("unhandledRejection", console.error);
