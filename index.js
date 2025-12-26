@@ -1,5 +1,5 @@
-import express from "express";
-import crypto from "crypto";
+const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
 
