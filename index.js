@@ -1,42 +1,35 @@
 const express = require("express");
-const crypto = require("crypto");
+const nacl = require("tweetnacl");
 
 const app = express();
 
 const PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY;
+if (!PUBLIC_KEY) {
+  throw new Error("DISCORD_PUBLIC_KEY is not set");
+}
 
 app.post(
   "/interactions",
   express.raw({ type: "application/json" }),
   (req, res) => {
-    const signature = req.get("X-Signature-Ed25519");
-    const timestamp = req.get("X-Signature-Timestamp");
+    const signature = req.header("X-Signature-Ed25519");
+    const timestamp = req.header("X-Signature-Timestamp");
 
     if (!signature || !timestamp) {
       return res.status(401).send("Missing signature headers");
     }
 
-    const body = req.body; // ← Buffer
-
-    const isVerified = crypto.verify(
-      null,
-      Buffer.concat([
-        Buffer.from(timestamp),
-        body,
-      ]),
-      {
-        key: Buffer.from(PUBLIC_KEY, "hex"),
-        format: "der",
-        type: "spki",
-      },
-      Buffer.from(signature, "hex")
+    const isVerified = nacl.sign.detached.verify(
+      Buffer.from(timestamp + req.body.toString(), "utf8"),
+      Buffer.from(signature, "hex"),
+      Buffer.from(PUBLIC_KEY, "hex")
     );
 
     if (!isVerified) {
       return res.status(401).send("Bad request signature");
     }
 
-    const interaction = JSON.parse(body.toString("utf8"));
+    const interaction = JSON.parse(req.body.toString("utf8"));
 
     if (interaction.type === 1) {
       return res.json({ type: 1 });
@@ -52,7 +45,7 @@ app.post(
       });
     }
 
-    return res.status(200).json({
+    return res.json({
       type: 4,
       data: {
         content: "Unknown command",
