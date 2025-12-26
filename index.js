@@ -1,3 +1,4 @@
+process.env.DEBUG = "discordjs:*";
 require('dotenv').config();
 
 const { Client, GatewayIntentBits, Events, MessageFlags } = require('discord.js');
@@ -18,11 +19,7 @@ app.listen(port, () => {
 });
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+  intents: [GatewayIntentBits.Guilds],
 });
 
 client.once(Events.ClientReady, (c) => {
@@ -86,7 +83,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-console.log("TOKEN exists:", !!DISCORD_TOKEN);
+console.log("before login");
 
 client.login(DISCORD_TOKEN)
   .then(() => {
@@ -95,6 +92,8 @@ client.login(DISCORD_TOKEN)
   .catch((err) => {
     console.error("login() failed:", err);
   });
+
+console.log("after login call");
 
 client.on("error", console.error);
 client.on("shardError", console.error);
